@@ -11,7 +11,7 @@ svg {
 }
 
 table {
-    margin: 50px auto;
+    margin: auto;
     border-collapse: collapse;
     z-index: 1;
 }
@@ -25,6 +25,13 @@ li {
 #clear,
 #run {
     opacity: 1;
+}
+
+#stats {
+    margin-top: 35px;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: center;
 }
 
 td {

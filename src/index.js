@@ -101,6 +101,8 @@ Grid value key
 2: Water
 3: Start
 5: End
+6: Path
+7: Visited
 
 */
 
@@ -110,6 +112,10 @@ const DIRS = [
     [0, 1],
     [-1, 0],
     [0, -1],
+    [1, 1],
+    [1, -1],
+    [-1, 1],
+    [-1, -1],
 ];
 const COLORS = {
     0: 'white',
@@ -117,6 +123,8 @@ const COLORS = {
     2: '#5abcd8',
     3: '#097969',
     5: '#880808',
+    6: '#e4c1f9',
+    7: '#fcf6bd',
 };
 
 // Elements
@@ -224,7 +232,7 @@ const hoveringCell = (e) => {
 
 // Assumes we have a valid grid
 const updateCell = (row, col, color) => {
-    grid[row][col] = color;
+    grid[row][col] = color >= 6 ? grid[row][col] : color;
     const td = document.getElementById(`${row}-${col}`);
     td.style.backgroundColor = COLORS[color];
 };
@@ -244,7 +252,53 @@ const shadeAlgos = () => {
 };
 
 // Draws path and highlights visited cells
-const runDijkstra = async () => {};
+const runDijkstra = async () => {
+    running = true;
+    const seen = new Map();
+    seen.set(`${rstart}, ${cstart}`, [null, null]);
+    const heap = new BinaryHeap();
+    heap.insert([0, rstart, cstart]);
+
+    let [ans, dist, row, col] = [Number.POSITIVE_INFINITY, 0, 0, 0];
+    let [dr, dc] = [0, 0];
+    while (heap.size() > 0) {
+        [dist, row, col] = heap.extractMin();
+        if (row == rfinish && col == cfinish) {
+            ans = dist;
+            break;
+        }
+
+        for (let [r, c] of DIRS) {
+            [dr, dc] = [row + r, col + c];
+            if (
+                seen.has(`${dr}, ${dc}`) ||
+                dr < 0 ||
+                dc < 0 ||
+                dr >= SIDE_LENGTH ||
+                dc >= SIDE_LENGTH ||
+                grid[dr][dc] === 1
+            ) {
+                continue;
+            }
+            let extra = r && c ? 10 * Math.sqrt(2) : 10;
+            if (grid[dr][dc] == 2) extra *= 2;
+            heap.insert([dist + extra, dr, dc]);
+            seen.set(`${dr}, ${dc}`, [row, col]);
+            if (dr !== rfinish || dc !== cfinish) updateCell(dr, dc, 7);
+        }
+
+        await delay(10);
+    }
+    let [currRow, currCol] = seen.get(`${rfinish}, ${cfinish}`);
+    console.log(currRow + ' ' + currCol);
+    while (currRow !== rstart || currCol !== cstart) {
+        updateCell(currRow, currCol, 6);
+        [currRow, currCol] = seen.get(`${currRow}, ${currCol}`);
+        await delay(50);
+    }
+
+    running = false;
+};
 
 clear.addEventListener('click', resetTable);
 erase.addEventListener('click', () => {

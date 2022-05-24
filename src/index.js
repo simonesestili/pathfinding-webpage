@@ -251,46 +251,58 @@ const shadeAlgos = () => {
     });
 };
 
+const rowColToIdx = (row, col) => row * SIDE_LENGTH + col;
+
+const idxToRowCol = (idx) => [idx / SIDE_LENGTH, idx % SIDE_LENGTH];
+
+const canVisit = (row, col) =>
+    row >= 0 &&
+    col >= 0 &&
+    row < SIDE_LENGTH &&
+    col < SIDE_LENGTH &&
+    grid[row][col] !== 1;
+
 // Draws path and highlights visited cells
 const runDijkstra = async () => {
     running = true;
-    const parent = new Map();
-    const dists = new Map();
-    parent.set(`${rstart}, ${cstart}`, [null, null]);
-    dists.set(`${rstart}, ${cstart}`, 0);
     const heap = new BinaryHeap();
+    const parent = new Array(SIDE_LENGTH);
+    const dists = new Array(SIDE_LENGTH);
+    for (let i = 0; i < SIDE_LENGTH; i++) {
+        parent[i] = new Array(SIDE_LENGTH);
+        dists[i] = new Array(SIDE_LENGTH);
+        for (let j = 0; j < SIDE_LENGTH; j++) {
+            parent[i][j] = [null, null];
+            dists[i][j] = Number.POSITIVE_INFINITY;
+        }
+    }
     heap.insert([0, rstart, cstart]);
-
-    let [dist, row, col] = [0, 0, 0];
-    let [dr, dc] = [0, 0];
+    dists[0][0] = 0;
+    let [dist, row, col, weight, dr, dc] = [0, 0, 0, 0, 0, 0];
     while (heap.size() > 0) {
+        let ans = Number.POSITIVE_INFINITY;
+        for (let x of heap.getList()) {
+            ans = Math.min(ans, x[0]);
+        }
         [dist, row, col] = heap.extractMin();
+        console.log(dist === ans);
 
         let flag = false;
         for (let [r, c] of DIRS) {
             [dr, dc] = [row + r, col + c];
-            if (
-                dr < 0 ||
-                dc < 0 ||
-                dr >= SIDE_LENGTH ||
-                dc >= SIDE_LENGTH ||
-                grid[dr][dc] === 1
-            ) {
-                continue;
-            }
-            let extra = r && c ? 14 : 10;
-            if (grid[dr][dc] == 2) extra *= 2;
-            console.log(dists.get(`${dr}, ${dc}`));
-            if (
-                dists.has(`${dr}, ${dc}`) &&
-                dists.get(`${dr}, ${dc}`) <= dist + extra
-            )
-                continue;
-            heap.insert([dist + extra, dr, dc]);
-            parent.set(`${dr}, ${dc}`, [row, col]);
-            dists.set(`${dr}, ${dc}`, dist + extra);
-            console.log(dr + ' ' + dc + ' ' + (dist + extra));
+            if (!canVisit(dr, dc)) continue;
 
+            weight = r !== 0 && c !== 0 ? 14 : 10;
+            if (grid[dr][dc] === 2) weight *= 2;
+            if (dist + weight >= dists[dr][dc]) continue;
+            if (dr == 0 && dc == 0) console.log(dist);
+
+            // Traverse neighbor
+            heap.insert([dist + weight, dr, dc]);
+            dists[dr][dc] = dist + weight;
+            parent[dr][dc] = [row, col];
+
+            // Paint as visited
             if (dr !== rfinish || dc !== cfinish) updateCell(dr, dc, 7);
             else {
                 flag = true;
@@ -298,14 +310,14 @@ const runDijkstra = async () => {
             }
         }
         if (flag) break;
-
         await delay(10);
     }
-    let [currRow, currCol] = parent.get(`${rfinish}, ${cfinish}`);
 
+    // Paint the optimal path
+    let [currRow, currCol] = parent[rfinish][cfinish];
     while (currRow !== rstart || currCol !== cstart) {
         updateCell(currRow, currCol, 6);
-        [currRow, currCol] = parent.get(`${currRow}, ${currCol}`);
+        [currRow, currCol] = parent[currRow][currCol];
         await delay(50);
     }
 

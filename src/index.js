@@ -254,24 +254,22 @@ const shadeAlgos = () => {
 // Draws path and highlights visited cells
 const runDijkstra = async () => {
     running = true;
-    const seen = new Map();
-    seen.set(`${rstart}, ${cstart}`, [null, null]);
+    const parent = new Map();
+    const dists = new Map();
+    parent.set(`${rstart}, ${cstart}`, [null, null]);
+    dists.set(`${rstart}, ${cstart}`, 0);
     const heap = new BinaryHeap();
     heap.insert([0, rstart, cstart]);
 
-    let [ans, dist, row, col] = [Number.POSITIVE_INFINITY, 0, 0, 0];
+    let [dist, row, col] = [0, 0, 0];
     let [dr, dc] = [0, 0];
     while (heap.size() > 0) {
         [dist, row, col] = heap.extractMin();
-        if (row == rfinish && col == cfinish) {
-            ans = dist;
-            break;
-        }
 
+        let flag = false;
         for (let [r, c] of DIRS) {
             [dr, dc] = [row + r, col + c];
             if (
-                seen.has(`${dr}, ${dc}`) ||
                 dr < 0 ||
                 dc < 0 ||
                 dr >= SIDE_LENGTH ||
@@ -280,20 +278,34 @@ const runDijkstra = async () => {
             ) {
                 continue;
             }
-            let extra = r && c ? 10 * Math.sqrt(2) : 10;
+            let extra = r && c ? 14 : 10;
             if (grid[dr][dc] == 2) extra *= 2;
+            console.log(dists.get(`${dr}, ${dc}`));
+            if (
+                dists.has(`${dr}, ${dc}`) &&
+                dists.get(`${dr}, ${dc}`) <= dist + extra
+            )
+                continue;
             heap.insert([dist + extra, dr, dc]);
-            seen.set(`${dr}, ${dc}`, [row, col]);
+            parent.set(`${dr}, ${dc}`, [row, col]);
+            dists.set(`${dr}, ${dc}`, dist + extra);
+            console.log(dr + ' ' + dc + ' ' + (dist + extra));
+
             if (dr !== rfinish || dc !== cfinish) updateCell(dr, dc, 7);
+            else {
+                flag = true;
+                break;
+            }
         }
+        if (flag) break;
 
         await delay(10);
     }
-    let [currRow, currCol] = seen.get(`${rfinish}, ${cfinish}`);
-    console.log(currRow + ' ' + currCol);
+    let [currRow, currCol] = parent.get(`${rfinish}, ${cfinish}`);
+
     while (currRow !== rstart || currCol !== cstart) {
         updateCell(currRow, currCol, 6);
-        [currRow, currCol] = seen.get(`${currRow}, ${currCol}`);
+        [currRow, currCol] = parent.get(`${currRow}, ${currCol}`);
         await delay(50);
     }
 

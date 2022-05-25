@@ -1,96 +1,28 @@
-function BinaryHeap() {
-    let list = [];
+class Moves {
+    constructor() {
+        this.list = [];
+    }
 
-    //Heapify
-    this.minHeapify = (arr, n, i) => {
-        let smallest = i;
-        let l = 2 * i + 1; //left child index
-        let r = 2 * i + 2; //right child index
-
-        //If left child is smaller than root
-        if (l < n && arr[l] < arr[smallest]) {
-            smallest = l;
+    bubble() {
+        for (let i = 0; i < this.list.length - 1; i++) {
+            if (this.list[i] >= this.list[i+1]) continue;
+            [this.list[i], this.list[i+1]] = [this.list[i+1], this.list[i]];
         }
+    }
 
-        // If right child is smaller than smallest so far
-        if (r < n && arr[r] < arr[smallest]) {
-            smallest = r;
-        }
+    insert(elem) {
+        this.list.push(elem);
+    }
 
-        // If smallest is not root
-        if (smallest != i) {
-            let temp = arr[i];
-            arr[i] = arr[smallest];
-            arr[smallest] = temp;
+    pop(elem) {
+        let popped =  this.list.pop();
+        this.bubble();
+        return popped
+    }
 
-            // Recursively heapify the affected sub-tree
-            this.minHeapify(arr, n, smallest);
-        }
-    };
-
-    //Insert Value
-    this.insert = (num) => {
-        const size = list.length;
-
-        if (size === 0) {
-            list.push(num);
-        } else {
-            list.push(num);
-
-            //Heapify
-            for (let i = parseInt(list.length / 2 - 1); i >= 0; i--) {
-                this.minHeapify(list, list.length, i);
-            }
-        }
-    };
-
-    //Remove value
-    this.delete = (num) => {
-        const size = list.length;
-
-        //Get the index of the number to be removed
-        let i;
-        for (i = 0; i < size; i++) {
-            if (list[i] === num) {
-                break;
-            }
-        }
-
-        //Swap the number with last element
-        [list[i], list[size - 1]] = [list[size - 1], list[i]];
-
-        //Remove the last element
-        list.splice(size - 1);
-
-        //Heapify the list again
-        for (let i = parseInt(list.length / 2 - 1); i >= 0; i--) {
-            this.minHeapify(list, list.length, i);
-        }
-    };
-
-    //Return min value
-    this.findMin = () => list[0];
-
-    //Remove min val
-    this.deleteMin = () => {
-        this.delete(list[0]);
-    };
-
-    //Remove and return min value
-    this.extractMin = () => {
-        const min = list[0];
-        this.delete(min);
-        return min;
-    };
-
-    //Size
-    this.size = () => list.length;
-
-    //IsEmpty
-    this.isEmpty = () => list.length === 0;
-
-    //Return head
-    this.getList = () => list;
+    size() {
+        return this.list.length;
+    }
 }
 
 /*
@@ -265,7 +197,7 @@ const canVisit = (row, col) =>
 // Draws path and highlights visited cells
 const runDijkstra = async () => {
     running = true;
-    const heap = new BinaryHeap();
+    const heap = new Moves();
     const parent = new Array(SIDE_LENGTH);
     const dists = new Array(SIDE_LENGTH);
     for (let i = 0; i < SIDE_LENGTH; i++) {
@@ -281,10 +213,7 @@ const runDijkstra = async () => {
     let [dist, row, col, weight, dr, dc] = [0, 0, 0, 0, 0, 0];
     while (heap.size() > 0) {
         let ans = Number.POSITIVE_INFINITY;
-        for (let x of heap.getList()) {
-            ans = Math.min(ans, x[0]);
-        }
-        [dist, row, col] = heap.extractMin();
+        [dist, row, col] = heap.pop();
         console.log(dist === ans);
 
         let flag = false;
@@ -295,7 +224,6 @@ const runDijkstra = async () => {
             weight = r !== 0 && c !== 0 ? 14 : 10;
             if (grid[dr][dc] === 2) weight *= 2;
             if (dist + weight >= dists[dr][dc]) continue;
-            if (dr == 0 && dc == 0) console.log(dist);
 
             // Traverse neighbor
             heap.insert([dist + weight, dr, dc]);

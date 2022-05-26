@@ -259,16 +259,18 @@ const runAStar = async () => {
     }
 
     // Paint the optimal path
-    let [currRow, currCol] = parent[rfinish][cfinish];
-    let [prevRow, prevCol] = [0, 0];
-    let effort = dists[rfinish][cfinish] - dists[currRow][currCol];
-    while (currRow !== rstart || currCol !== cstart) {
-        updateCell(currRow, currCol, 6);
-        [prevRow, prevCol] = [currRow, currCol];
-        [currRow, currCol] = parent[currRow][currCol];
-        effort += dists[prevRow][prevCol] - dists[currRow][currCol];
-        effortStat.innerHTML = effort;
-        await delay(50);
+    if (dists[rfinish][cfinish] !== Number.POSITIVE_INFINITY) {
+        let [currRow, currCol] = parent[rfinish][cfinish];
+        let [prevRow, prevCol] = [0, 0];
+        let effort = dists[rfinish][cfinish] - dists[currRow][currCol];
+        while (currRow !== rstart || currCol !== cstart) {
+            updateCell(currRow, currCol, 6);
+            [prevRow, prevCol] = [currRow, currCol];
+            [currRow, currCol] = parent[currRow][currCol];
+            effort += dists[prevRow][prevCol] - dists[currRow][currCol];
+            effortStat.innerHTML = effort;
+            await delay(50);
+        }
     }
 
     painted = true;
@@ -324,16 +326,18 @@ const runDijkstra = async () => {
     }
 
     // Paint the optimal path
-    let [currRow, currCol] = parent[rfinish][cfinish];
-    let [prevRow, prevCol] = [0, 0];
-    let effort = dists[rfinish][cfinish] - dists[currRow][currCol];
-    while (currRow !== rstart || currCol !== cstart) {
-        updateCell(currRow, currCol, 6);
-        [prevRow, prevCol] = [currRow, currCol];
-        [currRow, currCol] = parent[currRow][currCol];
-        effort += dists[prevRow][prevCol] - dists[currRow][currCol];
-        effortStat.innerHTML = effort;
-        await delay(50);
+    if (dists[rfinish][cfinish] !== Number.POSITIVE_INFINITY) {
+        let [currRow, currCol] = parent[rfinish][cfinish];
+        let [prevRow, prevCol] = [0, 0];
+        let effort = dists[rfinish][cfinish] - dists[currRow][currCol];
+        while (currRow !== rstart || currCol !== cstart) {
+            updateCell(currRow, currCol, 6);
+            [prevRow, prevCol] = [currRow, currCol];
+            [currRow, currCol] = parent[currRow][currCol];
+            effort += dists[prevRow][prevCol] - dists[currRow][currCol];
+            effortStat.innerHTML = effort;
+            await delay(50);
+        }
     }
 
     painted = true;

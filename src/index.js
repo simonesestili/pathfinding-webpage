@@ -3,21 +3,13 @@ class Moves {
         this.list = [];
     }
 
-    bubble() {
-        for (let i = 0; i < this.list.length - 1; i++) {
-            if (this.list[i] >= this.list[i+1]) continue;
-            [this.list[i], this.list[i+1]] = [this.list[i+1], this.list[i]];
-        }
-    }
-
     insert(elem) {
         this.list.push(elem);
     }
 
     pop(elem) {
-        let popped =  this.list.pop();
-        this.bubble();
-        return popped
+        this.list.sort((a, b) => b[0] - a[0]);
+        return this.list.pop();
     }
 
     size() {
@@ -57,6 +49,7 @@ const COLORS = {
     5: '#880808',
     6: '#e4c1f9',
     7: '#fcf6bd',
+    8: '#bdfcdf',
 };
 
 // Elements
@@ -72,15 +65,17 @@ const editors = [erase, obstacle, water, start, finish];
 const dijkstra = document.getElementById('dijkstra');
 const astar = document.getElementById('astar');
 const run = document.getElementById('run');
+const effortStat = document.getElementById('effort');
+const cellsVisitedStat = document.getElementById('cells-visited');
 const algos = [dijkstra, astar];
 
 // State variables
 let grid = null;
 let mousedown = false;
 let running = false;
+let painted = false;
 let editingSetting = '';
 let algoSetting = 'dijkstra';
-let [effort, visitedCnt] = [0, 0];
 let [rstart, cstart] = [0, 0];
 let [rfinish, cfinish] = [SIDE_LENGTH - 1, SIDE_LENGTH - 1];
 
@@ -97,6 +92,8 @@ const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // Clears table
 const resetTable = () => {
+    effortStat.innerHTML = 0;
+    cellsVisitedStat.innerHTML = 0;
     if (running) return;
     TABLE.innerHTML = '';
     grid = new Array(SIDE_LENGTH);
@@ -135,6 +132,7 @@ const selectCell = (e) => {
 // Edit cell
 const hoveringCell = (e) => {
     if (!mousedown || running) return;
+    if (painted) unpaint();
     const [row, col] = e.srcElement.id.split('-').map((x) => parseInt(x));
 
     if (editingSetting === 'start' || editingSetting === 'finish') {
@@ -169,6 +167,19 @@ const updateCell = (row, col, color) => {
     td.style.backgroundColor = COLORS[color];
 };
 
+// Removes path and visited nodes highlights
+const unpaint = () => {
+    effortStat.innerHTML = 0;
+    cellsVisitedStat.innerHTML = 0;
+    for (let row = 0; row < SIDE_LENGTH; row++) {
+        for (let col = 0; col < SIDE_LENGTH; col++) {
+            updateCell(row, col, grid[row][col]);
+        }
+    }
+
+    painted = false;
+};
+
 // Shade selected editor
 const shadeEditors = () => {
     editors.forEach((editor) => {
@@ -182,10 +193,6 @@ const shadeAlgos = () => {
         algo.style.opacity = algoSetting === algo.id ? 1 : 0.6;
     });
 };
-
-const rowColToIdx = (row, col) => row * SIDE_LENGTH + col;
-
-const idxToRowCol = (idx) => [idx / SIDE_LENGTH, idx % SIDE_LENGTH];
 
 const canVisit = (row, col) =>
     row >= 0 &&
@@ -210,11 +217,9 @@ const runDijkstra = async () => {
     }
     heap.insert([0, rstart, cstart]);
     dists[0][0] = 0;
-    let [dist, row, col, weight, dr, dc] = [0, 0, 0, 0, 0, 0];
+    let [dist, row, col, weight, dr, dc, vis] = [0, 0, 0, 0, 0, 0, 1];
     while (heap.size() > 0) {
-        let ans = Number.POSITIVE_INFINITY;
         [dist, row, col] = heap.pop();
-        console.log(dist === ans);
 
         let flag = false;
         for (let [r, c] of DIRS) {
@@ -227,28 +232,37 @@ const runDijkstra = async () => {
 
             // Traverse neighbor
             heap.insert([dist + weight, dr, dc]);
+            vis += dists[dr][dc] === Number.POSITIVE_INFINITY;
             dists[dr][dc] = dist + weight;
             parent[dr][dc] = [row, col];
 
             // Paint as visited
-            if (dr !== rfinish || dc !== cfinish) updateCell(dr, dc, 7);
+            if (dr !== rfinish || dc !== cfinish)
+                updateCell(dr, dc, 7 + (grid[dr][dc] === 2));
             else {
                 flag = true;
                 break;
             }
         }
+        cellsVisitedStat.innerHTML = vis;
         if (flag) break;
         await delay(10);
     }
 
     // Paint the optimal path
     let [currRow, currCol] = parent[rfinish][cfinish];
+    let [prevRow, prevCol] = [0, 0];
+    let effort = dists[rfinish][cfinish] - dists[currRow][currCol];
     while (currRow !== rstart || currCol !== cstart) {
         updateCell(currRow, currCol, 6);
+        [prevRow, prevCol] = [currRow, currCol];
         [currRow, currCol] = parent[currRow][currCol];
+        effort += dists[prevRow][prevCol] - dists[currRow][currCol];
+        effortStat.innerHTML = effort;
         await delay(50);
     }
 
+    painted = true;
     running = false;
 };
 

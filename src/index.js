@@ -381,6 +381,7 @@ astar.addEventListener('click', () => {
 });
 run.addEventListener('click', async () => {
     if (running) return;
+    if (painted) unpaint();
     running = true;
 
     // Draw path and visited

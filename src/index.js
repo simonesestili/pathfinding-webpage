@@ -92,8 +92,7 @@ const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // Clears table
 const resetTable = () => {
-    effortStat.innerHTML = 0;
-    cellsVisitedStat.innerHTML = 0;
+    resetStats();
     if (running) return;
     TABLE.innerHTML = '';
     grid = new Array(SIDE_LENGTH);
@@ -167,10 +166,14 @@ const updateCell = (row, col, color) => {
     td.style.backgroundColor = COLORS[color];
 };
 
-// Removes path and visited nodes highlights
-const unpaint = () => {
+const resetStats = () => {
     effortStat.innerHTML = 0;
     cellsVisitedStat.innerHTML = 0;
+};
+
+// Removes path and visited nodes highlights
+const unpaint = () => {
+    resetStats();
     for (let row = 0; row < SIDE_LENGTH; row++) {
         for (let col = 0; col < SIDE_LENGTH; col++) {
             updateCell(row, col, grid[row][col]);
@@ -200,6 +203,77 @@ const canVisit = (row, col) =>
     row < SIDE_LENGTH &&
     col < SIDE_LENGTH &&
     grid[row][col] !== 1;
+
+const calcHeuristic = (row, col) => {
+    return (
+        10 * Math.sqrt(Math.pow(row - rfinish, 2) + Math.pow(col - cfinish, 2))
+    );
+};
+
+// Draws path and highlights visited cells
+const runAStar = async () => {
+    running = true;
+    const heap = new Moves();
+    const parent = new Array(SIDE_LENGTH);
+    const dists = new Array(SIDE_LENGTH);
+    for (let i = 0; i < SIDE_LENGTH; i++) {
+        parent[i] = new Array(SIDE_LENGTH);
+        dists[i] = new Array(SIDE_LENGTH);
+        for (let j = 0; j < SIDE_LENGTH; j++) {
+            parent[i][j] = [null, null];
+            dists[i][j] = Number.POSITIVE_INFINITY;
+        }
+    }
+    heap.insert([0, rstart, cstart]);
+    dists[0][0] = 0;
+    let [heuristic, row, col, weight, dr, dc, vis] = [0, 0, 0, 0, 0, 0, 1];
+    while (heap.size() > 0) {
+        [heuristic, row, col] = heap.pop();
+
+        let flag = false;
+        for (let [r, c] of DIRS) {
+            [dr, dc] = [row + r, col + c];
+            if (!canVisit(dr, dc)) continue;
+
+            weight = r !== 0 && c !== 0 ? 14 : 10;
+            if (grid[dr][dc] === 2) weight *= 2;
+            if (dists[row][col] + weight >= dists[dr][dc]) continue;
+
+            // Traverse neighbor
+            vis += dists[dr][dc] === Number.POSITIVE_INFINITY;
+            dists[dr][dc] = dists[row][col] + weight;
+            parent[dr][dc] = [row, col];
+            heap.insert([dists[dr][dc] + calcHeuristic(dr, dc), dr, dc]);
+
+            // Paint as visited
+            if (dr !== rfinish || dc !== cfinish)
+                updateCell(dr, dc, 7 + (grid[dr][dc] === 2));
+            else {
+                flag = true;
+                break;
+            }
+        }
+        cellsVisitedStat.innerHTML = vis;
+        if (flag) break;
+        await delay(10);
+    }
+
+    // Paint the optimal path
+    let [currRow, currCol] = parent[rfinish][cfinish];
+    let [prevRow, prevCol] = [0, 0];
+    let effort = dists[rfinish][cfinish] - dists[currRow][currCol];
+    while (currRow !== rstart || currCol !== cstart) {
+        updateCell(currRow, currCol, 6);
+        [prevRow, prevCol] = [currRow, currCol];
+        [currRow, currCol] = parent[currRow][currCol];
+        effort += dists[prevRow][prevCol] - dists[currRow][currCol];
+        effortStat.innerHTML = effort;
+        await delay(50);
+    }
+
+    painted = true;
+    running = false;
+};
 
 // Draws path and highlights visited cells
 const runDijkstra = async () => {
@@ -297,11 +371,13 @@ dijkstra.addEventListener('click', () => {
     if (running) return;
     algoSetting = 'dijkstra';
     shadeAlgos();
+    unpaint();
 });
 astar.addEventListener('click', () => {
     if (running) return;
     algoSetting = 'astar';
     shadeAlgos();
+    unpaint();
 });
 run.addEventListener('click', async () => {
     if (running) return;
@@ -310,6 +386,8 @@ run.addEventListener('click', async () => {
     // Draw path and visited
     if (algoSetting === 'dijkstra') {
         await runDijkstra();
+    } else {
+        await runAStar();
     }
 
     running = false;

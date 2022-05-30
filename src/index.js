@@ -271,6 +271,8 @@ const runAStar = async () => {
             effortStat.innerHTML = effort;
             await delay(50);
         }
+    } else {
+        effortStat.innerHTML = 'Unreachable';
     }
 
     painted = true;
@@ -338,6 +340,8 @@ const runDijkstra = async () => {
             effortStat.innerHTML = effort;
             await delay(50);
         }
+    } else {
+        effortStat.innerHTML = 'Unreachable';
     }
 
     painted = true;
